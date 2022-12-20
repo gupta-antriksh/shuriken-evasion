@@ -24,7 +24,7 @@ tilesX = 4
 tilesY = 4
 
 #title and icon
-pygame.display.set_caption("Dodge'em All!")
+pygame.display.set_caption("Shuriken Evasion")
 icon = pygame.image.load('art/shurikenRed.png')
 pygame.display.set_icon(icon)
 
@@ -40,6 +40,9 @@ playerX_vel = 0
 playerY_vel = 0
 playerAngle = 0
 player_max_vel = 0
+boost_ready = True
+last_boost_time = 0
+current_time = 0
 
 #missiles
 number_of_missiles = 5
@@ -100,9 +103,14 @@ def game_over_text():
     screen.blit(restart_text,(625,490))
     screen.blit(escape_text,(575,540))
 
-def show_score(x,y):
+def show_score_and_boost(x,y,z):
     score = font.render("Score : " + str(score_value),True,(0,0,0))
+    if z == True:
+        boost = font.render("Boost is Ready!",True,(0,0,0))
+    else:
+        boost = font.render("Boost is Recharging",True,(0,0,0))
     screen.blit(score,(x,y))
+    screen.blit(boost,(x+950,y))
 
 def show_start_screen():
     start_title = over_font.render("SHURIKEN EVASION",True,(128,0,128))
@@ -123,8 +131,8 @@ def show_help_screen():
     story_text_2 = font.render("important intel, and while returning, you disguised yourself as a paper plane.",True,(0,0,0))
     story_text_3 = font.render("But YOU WERE BEING WATCHED, and your disguise has been compromised.",True,(0,0,0))
     story_text_4 = font.render("EVADE THE ENEMY'S SHURIKENS AT ALL COSTS!",True,(0,0,0))
-    controls_text_1 = font.render("Use the mouse cursor to guide yourself through the snowy skies. Shuriken of",True,(0,0,0))
-    controls_text_2 = font.render("same type destroy each other upon collision and give you points. Press Esc",True,(0,0,0))
+    controls_text_1 = font.render("Use the mouse cursor to navigate through the snowy skies. Click to Activate Boost.",True,(0,0,0))
+    controls_text_2 = font.render("Shuriken of same type destroy each other upon collision and give you points. Press Esc",True,(0,0,0))
     controls_text_3 = font.render("during gameplay to Pause the game and press again to Resume. Good Luck!",True,(0,0,0))
     controls_text_4 = font.render("BEWARE: Black shuriken are fast, but Red ones are even faster!",True,(168,0,0))
     back_text = font.render("Back",True,(255,255,255))
@@ -135,8 +143,8 @@ def show_help_screen():
     screen.blit(story_text_2,(160,250))
     screen.blit(story_text_3,(160,300))
     screen.blit(story_text_4,(380,350))
-    screen.blit(controls_text_1,(160,500))
-    screen.blit(controls_text_2,(160,550))
+    screen.blit(controls_text_1,(150,500))
+    screen.blit(controls_text_2,(120,550))
     screen.blit(controls_text_3,(160,600))
     screen.blit(controls_text_4,(250,650))
 
@@ -209,9 +217,9 @@ while running:
         for j in range(tilesY):
             screen.blit(bg, ((i-1)*bg_width+scrollX,(j-1)*bg_height+scrollY))
 
-    #show score
+    #show score and boost
     if (game_state == 1 or game_state == 2) and not is_game_over:
-        show_score(textX+100,textY+100)
+        show_score_and_boost(textX+100,textY+100,boost_ready)
     
     #rendering explosions
     if game_state == 1:
@@ -234,6 +242,7 @@ while running:
                 score_value = 0
                 score_by_twenty = 0
                 player_max_vel = 0
+                boost_ready = True
                 for i in range(number_of_missiles):
                     if(i%2):
                         missileX[i]= -564
@@ -252,7 +261,11 @@ while running:
                     keyup = False
                 else:
                     game_state = 0
-            i
+        
+        if game_state == 1 and not is_game_over and event.type == pygame.MOUSEBUTTONDOWN and boost_ready:
+            player_max_vel = 2
+            last_boost_time = pygame.time.get_ticks()
+            boost_ready = False
         
         if game_state == 2:            
             if keyup and event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -278,6 +291,7 @@ while running:
                         score_value = 0
                         score_by_twenty = 0
                         player_max_vel = 0
+                        boost_ready = True
                         for i in range(number_of_missiles):
                             if(i%2):
                                 missileX[i]= -564
@@ -311,6 +325,11 @@ while running:
             playerAngle = (180/math.pi)*math.acos((mx-(playerX))/math.sqrt(math.pow(mx-(playerX),2)+math.pow(my-(playerY),2)+0.0001))-90
         else:
             playerAngle = -(180/math.pi)*math.acos((mx-(playerX))/math.sqrt(math.pow(mx-(playerX),2)+math.pow(my-(playerY),2)+0.0001))-90
+        if not is_game_over and player_max_vel > 0.95:
+            player_max_vel -= 0.055
+        current_time = pygame.time.get_ticks()
+        if current_time - last_boost_time > 5000:
+            boost_ready = True
 
     #scrolling
     if game_state == 1:
