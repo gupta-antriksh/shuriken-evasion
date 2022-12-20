@@ -56,7 +56,7 @@ missileY_acc = []
 missile_max_acc = []
 missile_angle = []
 missile_max_acc.append(1)
-missile_max_acc.append(1.1)
+missile_max_acc.append(1.15)
 for i in range(20):
     if(i%2):
         missileX.append(-564)
@@ -89,13 +89,13 @@ over_font = pygame.font.Font('freesansbold.ttf',64)
 is_game_over = False
 
 def game_over_text():
-    game_over1 = over_font.render("YOU FELL PREY TO",True,(168,0,0))
-    game_over2 = over_font.render("THE ENEMY!",True,(168,0,0))
+    game_over1 = over_font.render("YOU FAILED TO DELIVER",True,(168,0,0))
+    game_over2 = over_font.render("THE SECRET CODE!",True,(168,0,0))
     final_score = font.render("Your Final Score is " + str(score_value),True,(0,0,0))
     restart_text = font.render("Press R to Restart",True,(0,0,0))
     escape_text = font.render("Press Esc to quit to Title",True,(0,0,0))
-    screen.blit(game_over1,(460,280))
-    screen.blit(game_over2,(560,360))
+    screen.blit(game_over1,(380,280))
+    screen.blit(game_over2,(460,360))
     screen.blit(final_score,(600,440))
     screen.blit(restart_text,(625,490))
     screen.blit(escape_text,(575,540))
@@ -119,7 +119,7 @@ def show_start_screen():
 
 def show_help_screen():
     help_title = over_font.render("HELP",True,(0,0,0))
-    story_text_1 = font.render("You were on an espionage mission. You succesfully stole the secret code and gathered",True,(0,0,0))
+    story_text_1 = font.render("You were on an espionage mission. You successfully stole the secret code and gathered",True,(0,0,0))
     story_text_2 = font.render("important intel, and while returning, you disguised yourself as a paper plane.",True,(0,0,0))
     story_text_3 = font.render("But YOU WERE BEING WATCHED, and your disguise has been compromised.",True,(0,0,0))
     story_text_4 = font.render("EVADE THE ENEMY'S SHURIKENS AT ALL COSTS!",True,(0,0,0))
