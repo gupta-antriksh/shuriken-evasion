@@ -15,9 +15,13 @@ screen_height = 863
 screen = pygame.display.set_mode((screen_width,screen_height),0,32)
 
 #background and scroll variables
-bg = pygame.image.load('art/snowySky.png')
-bg_width = bg.get_width()
-bg_height = bg.get_height()
+bg_images = [] 
+for i in range(45):
+    image = pygame.image.load(f"art/bg/snowySky{2*i+1}.png").convert()
+    bg_images.append(image)
+bg_width = bg_images[0].get_width()
+bg_height = bg_images[0].get_height()
+bg_index = 0
 scrollX = 0
 scrollY = 0
 tilesX = 4
@@ -30,6 +34,7 @@ pygame.display.set_icon(icon)
 
 #background music
 mixer.music.load('sounds/Shepard-tone.mp3')
+mixer.music.set_volume(0.5)
 
 #player
 playerImg = pygame.image.load('art/paperPlane.png').convert()
@@ -43,6 +48,9 @@ player_max_vel = 0
 boost_ready = True
 last_boost_time = 0
 current_time = 0
+prev_time = 0
+gameplay_pause_time = 0
+gameplay_resume_time = 0
 
 #missiles
 number_of_missiles = 5
@@ -78,6 +86,7 @@ for i in range(20):
 
 #sounds
 collision_Sound = mixer.Sound('sounds/explosion.wav')
+boost_Sound = mixer.Sound('sounds/boost.wav')
 game_over_Sound = mixer.Sound('sounds/gameOver.wav')
 
 #score
@@ -87,21 +96,38 @@ font = pygame.font.Font('freesansbold.ttf',32)
 textX = 20
 textY = 20
 
-#game over
+#highscore
+file = open("highscore.txt", "r+")
+highscore = int(file.read())
+file.close()
+
+#fonts
 over_font = pygame.font.Font('freesansbold.ttf',64)
+title_font = pygame.font.Font('fonts/Amatic-Bold.ttf',110)
+
+#game over
 is_game_over = False
 
-def game_over_text():
+def game_over_text(time):
     game_over1 = over_font.render("YOU FAILED TO DELIVER",True,(168,0,0))
     game_over2 = over_font.render("THE SECRET CODE!",True,(168,0,0))
+    minutes = str(int(time/60000))
+    if (int(time/1000))%60 < 10:
+        seconds = "0"+str((int(time/1000))%60)
+    else:
+        seconds = str((int(time/1000))%60)
+    survival_time = font.render("Survival Time: " + minutes + ":" + seconds,True,(0,0,0))
     final_score = font.render("Your Final Score is " + str(score_value),True,(0,0,0))
     restart_text = font.render("Press R to Restart",True,(0,0,0))
     escape_text = font.render("Press Esc to quit to Title",True,(0,0,0))
+    highscore_text = font.render("High Score: "+str(highscore),True,(0,0,0))
     screen.blit(game_over1,(380,280))
     screen.blit(game_over2,(460,360))
-    screen.blit(final_score,(600,440))
-    screen.blit(restart_text,(625,490))
-    screen.blit(escape_text,(575,540))
+    screen.blit(survival_time,(623,440))
+    screen.blit(final_score,(600,490))
+    screen.blit(highscore_text,(648,540))
+    screen.blit(restart_text,(625,590))
+    screen.blit(escape_text,(575,640))
 
 def show_score_and_boost(x,y,z):
     score = font.render("Score : " + str(score_value),True,(0,0,0))
@@ -113,17 +139,20 @@ def show_score_and_boost(x,y,z):
     screen.blit(boost,(x+950,y))
 
 def show_start_screen():
-    start_title = over_font.render("SHURIKEN EVASION",True,(128,0,128))
+    
+    start_title = title_font.render("SHURIKEN  EVASION",True,(170,0,0))
     start_text = font.render("Start",True,(255,255,255))
     help_text = font.render("Help",True,(255,255,255))
     exit_text = font.render("Exit",True,(255,255,255))
-    pygame.draw.rect(screen,(0,0,0),[570,280,400,60])
-    pygame.draw.rect(screen,(0,0,0),[570,550,400,60])
-    pygame.draw.rect(screen,(0,0,0),[570,700,400,60])
-    screen.blit(start_title,(452,110))
+    
+    pygame.draw.rect(screen,(0,0,0),[570,280,400,60],border_radius=15)
+    pygame.draw.rect(screen,(0,0,0),[570,550,400,60],border_radius=15)
+    pygame.draw.rect(screen,(0,0,0),[570,700,400,60],border_radius=15)
+    screen.blit(start_title,(532,110))
     screen.blit(start_text,(728,295))
     screen.blit(help_text,(730,565))
     screen.blit(exit_text,(735,715))
+    
 
 def show_help_screen():
     help_title = over_font.render("HELP",True,(0,0,0))
@@ -131,28 +160,28 @@ def show_help_screen():
     story_text_2 = font.render("important intel, and while returning, you disguised yourself as a paper plane.",True,(0,0,0))
     story_text_3 = font.render("But YOU WERE BEING WATCHED, and your disguise has been compromised.",True,(0,0,0))
     story_text_4 = font.render("EVADE THE ENEMY'S SHURIKENS AT ALL COSTS!",True,(0,0,0))
-    controls_text_1 = font.render("Use the mouse cursor to navigate through the snowy skies. Click to Activate Boost.",True,(0,0,0))
+    controls_text_1 = font.render("Use the mouse cursor to navigate through the skies. Click to Activate Boost.",True,(0,0,0))
     controls_text_2 = font.render("Shuriken of same type destroy each other upon collision and give you points. Press Esc",True,(0,0,0))
     controls_text_3 = font.render("during gameplay to Pause the game and press again to Resume. Good Luck!",True,(0,0,0))
     controls_text_4 = font.render("BEWARE: Black shuriken are fast, but Red ones are even faster!",True,(168,0,0))
     back_text = font.render("Back",True,(255,255,255))
-    pygame.draw.rect(screen,(0,0,0),[570,700,400,60])
+    pygame.draw.rect(screen,(0,0,0),[570,700,400,60],border_radius=15)
     screen.blit(help_title,(690,110))
     screen.blit(back_text,(735,715))
     screen.blit(story_text_1,(80,200))
     screen.blit(story_text_2,(160,250))
     screen.blit(story_text_3,(160,300))
     screen.blit(story_text_4,(380,350))
-    screen.blit(controls_text_1,(150,500))
-    screen.blit(controls_text_2,(120,550))
+    screen.blit(controls_text_1,(165,500))
+    screen.blit(controls_text_2,(80,550))
     screen.blit(controls_text_3,(160,600))
     screen.blit(controls_text_4,(250,650))
 
 def show_pause_screen():
     resume_text = font.render("Resume",True,(255,255,255))
     back_text = font.render("Back to Title",True,(255,255,255))
-    pygame.draw.rect(screen,(0,0,0),[570,220,400,60])
-    pygame.draw.rect(screen,(0,0,0),[570,611,400,60])
+    pygame.draw.rect(screen,(0,0,0),[570,220,400,60],border_radius=15)
+    pygame.draw.rect(screen,(0,0,0),[570,611,400,60],border_radius=15)
     screen.blit(resume_text,(705,235))
     screen.blit(back_text,(675,625))
 
@@ -171,10 +200,15 @@ def distance(x1,y1,x2,y2):
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
+        spritesheet = pygame.image.load("art/exp.png")
+        sprite_width = spritesheet.get_width()//8
+        sprite_height = spritesheet.get_height()//8
         self.images = []
-        for num in range(1,6):
-            img = pygame.image.load(f"art/exp{num}.png")
-            img = pygame.transform.scale(img, (100,100))
+        for num in range(39):
+            x_offset = (num%8) * sprite_height
+            y_offset = (num//8) * sprite_width
+            img = spritesheet.subsurface(pygame.Rect(x_offset, y_offset, sprite_width, sprite_height))
+            img = pygame.transform.scale(img, (125, 125))
             self.images.append(img)
         self.index = 0
         self.image = self.images[self.index]
@@ -183,7 +217,7 @@ class Explosion(pygame.sprite.Sprite):
         self.counter = 0
 
     def update(self):
-        explosion_speed = 4
+        explosion_speed = 1
         #update explosion animation
         self.counter+=1
 
@@ -200,11 +234,16 @@ explosion_group = pygame.sprite.Group()
 
 def explosion(x,y):
     explosion_group.add(Explosion(x,y))
+    collision_Sound.set_volume(0.5)
     collision_Sound.play()
 
 #gamestate: 0-start,1-gameplay,2-pause,3-help
 game_state = 0
 keyup = False
+gameplay_pause_duration_boost = 0
+gameplay_pause_duration_score = 0
+gameplay_pause_duration_total = 0
+hue_shift = 1
 
 #game loop
 running = True
@@ -212,11 +251,15 @@ while running:
 
     clock.tick(FPS)
     
-    #show background
+    #show and update background
     for i in range(tilesX):
         for j in range(tilesY):
-            screen.blit(bg, ((i-1)*bg_width+scrollX,(j-1)*bg_height+scrollY))
-
+            screen.blit(bg_images[int(bg_index)], ((i-1)*bg_width+scrollX,(j-1)*bg_height+scrollY))
+    
+    bg_index += 0.1
+    if bg_index>=45:
+        bg_index = 0
+    
     #show score and boost
     if (game_state == 1 or game_state == 2) and not is_game_over:
         show_score_and_boost(textX+100,textY+100,boost_ready)
@@ -243,6 +286,7 @@ while running:
                 score_by_twenty = 0
                 player_max_vel = 0
                 boost_ready = True
+                prev_time = pygame.time.get_ticks()
                 for i in range(number_of_missiles):
                     if(i%2):
                         missileX[i]= -564
@@ -255,15 +299,20 @@ while running:
                     missileY_acc[i] = 0
                 number_of_missiles = 5
                 mixer.music.play(-1)
+                gameplay_start_time = pygame.time.get_ticks()
+                gameplay_pause_duration_total = 0
             if event.key == pygame.K_ESCAPE:
                 if not is_game_over:
-                    game_state = 2
+                    gameplay_pause_time = pygame.time.get_ticks()
                     keyup = False
+                    game_state = 2
                 else:
                     game_state = 0
         
         if game_state == 1 and not is_game_over and event.type == pygame.MOUSEBUTTONDOWN and boost_ready:
             player_max_vel = 2
+            boost_Sound.set_volume(0.5)
+            boost_Sound.play()
             last_boost_time = pygame.time.get_ticks()
             boost_ready = False
         
@@ -272,6 +321,10 @@ while running:
                 if is_game_over:
                     game_state = 0
                 else:
+                    gameplay_resume_time = pygame.time.get_ticks()
+                    gameplay_pause_duration_boost += gameplay_resume_time-gameplay_pause_time
+                    gameplay_pause_duration_score += gameplay_resume_time-gameplay_pause_time
+                    gameplay_pause_duration_total += gameplay_resume_time-gameplay_pause_time
                     game_state = 1
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if mx >= 570 and mx <= 970:
@@ -292,6 +345,7 @@ while running:
                         score_by_twenty = 0
                         player_max_vel = 0
                         boost_ready = True
+                        prev_time = pygame.time.get_ticks()
                         for i in range(number_of_missiles):
                             if(i%2):
                                 missileX[i]= -564
@@ -304,6 +358,8 @@ while running:
                             missileY_acc[i] = 0
                         number_of_missiles = 5
                         mixer.music.play(-1)
+                        gameplay_start_time = pygame.time.get_ticks()
+                        gameplay_pause_duration_total = 0
                         game_state = 1
                     if my >= 550 and my <= 610:
                         game_state = 3
@@ -326,10 +382,20 @@ while running:
         else:
             playerAngle = -(180/math.pi)*math.acos((mx-(playerX))/math.sqrt(math.pow(mx-(playerX),2)+math.pow(my-(playerY),2)+0.0001))-90
         if not is_game_over and player_max_vel > 0.95:
-            player_max_vel -= 0.055
+            player_max_vel -= 0.04
+        if not is_game_over and player_max_vel < 0.95:
+            player_max_vel += 0.01
+        if is_game_over and player_max_vel > 0:
+            player_max_vel -= 0.01
         current_time = pygame.time.get_ticks()
-        if current_time - last_boost_time > 5000:
-            boost_ready = True
+        if not is_game_over:
+            if current_time - last_boost_time - gameplay_pause_duration_boost > 5000:
+                boost_ready = True
+                gameplay_pause_duration_boost = 0
+            if current_time - prev_time - gameplay_pause_duration_score > 2500:
+                score_value += 1;
+                prev_time = current_time
+                gameplay_pause_duration_score = 0
 
     #scrolling
     if game_state == 1:
@@ -339,10 +405,6 @@ while running:
         scrollY -= 30*playerY_vel
         if abs(scrollY) > bg_height:
             scrollY = 0
-        if not is_game_over and player_max_vel < 0.95:
-            player_max_vel += 0.01
-        if is_game_over and player_max_vel > 0:
-            player_max_vel -= 0.01
 
     #missile dyanamics
     if game_state == 1:
@@ -354,9 +416,9 @@ while running:
             missileX[i] += missileX_vel[i]
             missileY[i] += missileY_vel[i]
             if i%2==0:
-                missile_angle[i] = (missile_angle[i]+6)%360
+                missile_angle[i] = (missile_angle[i]+8)%360
             else:
-                missile_angle[i] = (missile_angle[i]-6)%360     
+                missile_angle[i] = (missile_angle[i]-8)%360     
 
     #missile-missile collision detection
     if game_state == 1 and not is_game_over:
@@ -388,6 +450,7 @@ while running:
             if distance(missileX[i],missileY[i],playerX,playerY) < 48:
                 explosion((missileX[i]+playerX)/2,(missileY[i]+playerY)/2)
                 game_over_Sound.play()
+                gameplay_end_time = pygame.time.get_ticks()
                 is_game_over = True 
     
     if not is_game_over:
@@ -397,8 +460,16 @@ while running:
             missile(missileX[i],missileY[i],missileType[i],missile_angle[i])
     if game_state == 1:
         if is_game_over:
-            game_over_text()
+            if highscore < score_value:
+                file = open("highscore.txt", "r+")
+                highscore = score_value
+                file.seek(0)
+                file.write(str(score_value))
+                file.close()
+            game_over_text(gameplay_end_time-gameplay_start_time-gameplay_pause_duration_total)
             mixer.music.stop()
+
+    #game states : 0(start screen), 1(gameplay/gameover), 2(pause), 3(help screen), 
 
     #start screen
     if game_state == 0:
