@@ -14,3 +14,5 @@ The explosion spritesheet "/art/exp.png" was downloaded from http://gushh.net/bl
 The image "/art/paperPlane.png" was downloaded from https://icons-for-free.com/paper+plane+plane+send+icon-1320186883780016792/
 
 The music "/sounds/Shepard-tone.mp3" was downloaded from https://orangefreesounds.com/shepard-tone/
+
+The old version of this game can be downloaded from my itch.io page - https://fractal1.itch.io/shuriken-evasion
